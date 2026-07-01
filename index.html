@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Utility & File Converter</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .drop-zone {
+            border: 2px dashed rgba(99, 102, 241, 0.5);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(99, 102, 241, 0.03);
+            margin-bottom: 25px;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--accent-color);
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .drop-zone svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--accent-color);
+            margin-bottom: 12px;
+        }
+
+        .drop-zone p {
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .drop-zone span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .workspace {
+            display: none;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .file-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            word-break: break-all;
+            padding-right: 10px;
+        }
+
+        .file-size {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        select {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: var(--accent-color);
+        }
+
+        button {
+            width: 100%;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+        }
+
+        .download-zone {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .download-btn {
+            background: var(--success-color);
+        }
+
+        .download-btn:hover {
+            background: #059669;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Web Utility Converter</h1>
+        <p>Secure, client-side developer file transforms</p>
+    </header>
+
+    <div class="drop-zone" id="dropZone">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        <p>Drag & drop your file here or <strong>browse</strong></p>
+        <span>Supports Text, Web Code, CSV, Markdown, and PNG/JPG Images</span>
+        <input type="file" id="fileInput">
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div class="file-details">
+            <span class="file-name" id="fileNameDisplay">file_name.csv</span>
+            <span class="file-size" id="fileSizeDisplay">0 KB</span>
+        </div>
+        
+        <div class="control-group">
+            <label for="outputFormat">Target Output Format</label>
+            <select id="outputFormat"></select>
+        </div>
+
+        <button id="convertBtn">Convert File</button>
+    </div>
+
+    <div class="download-zone" id="downloadZone">
+        <button id="downloadBtn" class="download-btn">Download Converted File</button>
+    </div>
+</div>
+
+<script>
+    // Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const workspace = document.getElementById('workspace');
+    const downloadZone = document.getElementById('downloadZone');
+    const convertBtn = document.getElementById('convertBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const fileSizeDisplay = document.getElementById('fileSizeDisplay');
+    const outputFormatSelect = document.getElementById('outputFormat');
+
+    let activeFile = null;
+    let convertedDataBlob = null;
+    let targetFileName = "";
+
+    // Mappings of allowable input extensions and target options
+    const textExtensions = ['txt', 'md', 'html', 'css', 'js', 'json', 'xml', 'sql'];
+    const imageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+
+    // UI Configuration matrix
+    const conversionMatrix = {
+        'csv': ['json', 'xml', 'txt'],
+        'md': ['html', 'txt'],
+        'png': ['webp', 'jpeg'],
+        'jpg': ['webp', 'png'],
+        'jpeg': ['webp', 'png'],
+        'webp': ['png', 'jpeg']
+    };
+
+    // Generic text extensions default cross-conversion targets
+    textExtensions.forEach(ext => {
+        if (!conversionMatrix[ext]) {
+            conversionMatrix[ext] = textExtensions.filter(target => target !== ext);
+        }
+    });
+
+    // Event Handlers for Drag & Drop
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', (e) => handleFileSelection(e.target.files[0]));
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) {
+            handleFileSelection(e.dataTransfer.files[0]);
+        }
+    });
+
+    function handleFileSelection(file) {
+        if (!file) return;
+        
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        
+        if (!conversionMatrix[fileExt]) {
+            alert(`Format .${fileExt} is unsupported or requires non-static backend architectures.`);
+            return;
+        }
+
+        activeFile = file;
+        convertedDataBlob = null;
+        downloadZone.style.display = 'none';
+
+        // Populate Interface Meta
+        fileNameDisplay.textContent = file.name;
+        fileSizeDisplay.textContent = `${(file.size / 1024).toFixed(2)} KB`;
+        
+        // Build Select Options
+        outputFormatSelect.innerHTML = '';
+        conversionMatrix[fileExt].forEach(target => {
+            const opt = document.createElement('option');
+            opt.value = target;
+            opt.textContent = target.toUpperCase();
+            outputFormatSelect.appendChild(opt);
+        });
+
+        workspace.style.display = 'block';
+    }
+
+    // Routing Logic Engine
+    convertBtn.addEventListener('click', () => {
+        if (!activeFile) return;
+
+        const reader = new FileReader();
+        const inputExt = activeFile.name.split('.').pop().toLowerCase();
+        const targetExt = outputFormatSelect.value;
+        const baseName = activeFile.name.substring(0, activeFile.name.lastIndexOf('.'));
+        targetFileName = `${baseName}.${targetExt}`;
+
+        if (imageExtensions.includes(inputExt)) {
+            // Binary/Image Execution Track
+            reader.onload = function(event) {
+                processImageConversion(event.target.result, targetExt);
+            };
+            reader.readAsDataURL(activeFile);
+        } else {
+            // Text Processing Execution Track
+            reader.onload = function(event) {
+                processTextConversion(event.target.result, inputExt, targetExt);
+            };
+            reader.readAsText(activeFile);
+        }
+    });
+
+    // Core Data Parsers
+    function processTextConversion(rawText, from, to) {
+        let outputText = "";
+        let mimeType = "text/plain";
+
+        if (from === 'csv' && to === 'json') {
+            outputText = csvToJSON(rawText);
+            mimeType = "application/json";
+        } else if (from === 'csv' && to === 'xml') {
+            outputText = csvToXML(rawText);
+            mimeType = "application/xml";
+        } else if (from === 'md' && to === 'html') {
+            outputText = markdownToHTML(rawText);
+            mimeType = "text/html";
+        } else {
+            // Dynamic structured text passthrough transforms (.txt, .sql, .css mapping resets)
+            outputText = rawText;
+            if (to === 'json') mimeType = "application/json";
+            else if (to === 'xml') mimeType = "application/xml";
+            else if (to === 'html') mimeType = "text/html";
+        }
+
+        convertedDataBlob = new Blob([outputText], { type: mimeType });
+        exposeDownload();
+    }
+
+    function processImageConversion(dataUrl, targetFormat) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            let mimeType = `image/${targetFormat}`;
+            if (targetFormat === 'jpeg') mimeType = 'image/jpeg';
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    convertedDataBlob = blob;
+                    exposeDownload();
+                } else {
+                    alert("Local Canvas manipulation context loss occurred during rendering.");
+                }
+            }, mimeType, 0.88); // 88% production-tier quality metrics optimization
+        };
+        img.src = dataUrl;
+    }
+
+    // CSV to JSON Translation Implementation
+    function csvToJSON(csv) {
+        const lines = csv.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length === 0) return "[]";
+        
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+        const result = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const obj = {};
+            // Simplified comma splitting. Real world projects would require regex loops for embedded escaped strings.
+            const currentLine = lines[i].split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''));
+            
+            headers.forEach((header, index) => {
+                obj[header] = currentLine[index] || "";
+            });
+            result.push(obj);
+        }
+        return JSON.stringify(result, null, 4);
+    }
+
+    // CSV to XML Translation Implementation
+    function csvToXML(csv) {
+        const lines = csv.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length === 0) return '<?xml version="1.0" encoding="UTF-8"?>\n<root></root>';
+        
+        const headers = lines[0].split(',').map(h => h.trim().replace(/[^a-zA-Z0-9]/g, '_'));
+        let xmlText = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
+
+        for (let i = 1; i < lines.length; i++) {
+            xmlText += '  <row>\n';
+            const currentLine = lines[i].split(',').map(cell => cell.trim());
+            headers.forEach((header, index) => {
+                const value = currentLine[index] !== undefined ? currentLine[index] : "";
+                // Native sanitization pattern for XML compatibility
+                const cleanValue = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                xmlText += `    <${header}>${cleanValue}</${header}>\n`;
+            });
+            xmlText += '  </row>\n';
+        }
+        xmlText += '</root>';
+        return xmlText;
+    }
+
+    // Compact Deterministic Vanilla Markdown Parser Engine
+    function markdownToHTML(markdown) {
+        let html = markdown;
+        
+        // Block elements structural tracking
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        html = html.replace(/^\s*\-\s+(.*$)/gim, '<li>$1</li>');
+        
+        // Inline formatting markup
+        html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+        html = html.replace(/\*(.*)\*/gim, '<em>$1</em>');
+        html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
+
+        // Package isolated structural text elements into paragraphs
+        return html.split('\n').map(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return '';
+            if (trimmed.match(/^<\/?(h1|h2|h3|li|ul|ol)/i)) return line;
+            return `<p>${line}</p>`;
+        }).join('\n');
+    }
+
+    // Reveal and prepare the Blob target reference link
+    function exposeDownload() {
+        downloadZone.style.display = 'block';
+        downloadBtn.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Blob download interface engine pipeline
+    downloadBtn.addEventListener('click', () => {
+        if (!convertedDataBlob) return;
+        
+        const url = URL.createObjectURL(convertedDataBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = targetFileName;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+</script>
+</body>
+</html>
